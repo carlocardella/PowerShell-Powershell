@@ -217,6 +217,21 @@ namespace Microsoft.PowerShell.Commands
         [ArgumentCompletions("FileDate", "FileDateUniversal", "FileDateTime", "FileDateTimeUniversal")]
         public string Format { get; set; }
 
+        /// <summary>
+        /// Returns the current Date as UTC
+        /// /// </summary>
+        [Parameter]
+        public SwitchParameter AsUTC
+        {
+            get { return _asUTC; }
+
+            set
+            {
+                _asUTC = true;
+            }
+        }
+        private bool _asUTC; /*=false*/
+
         #endregion
 
         #region methods
@@ -228,6 +243,12 @@ namespace Microsoft.PowerShell.Commands
         {
             DateTime dateToUse = DateTime.Now;
             int offset;
+
+            // convert to UTC
+            if (_asUTC)
+            {
+                dateToUse = dateToUse.ToUniversalTime();
+            }
 
             // use passed date object if specified
             if (_dateSpecified)
@@ -470,7 +491,7 @@ namespace Microsoft.PowerShell.Commands
                             break;
 
                         case 'u':
-                            sb.Append((int)dateTime.DayOfWeek);
+                            sb.Append((int) dateTime.DayOfWeek);
                             break;
 
                         case 'V':
@@ -500,8 +521,8 @@ namespace Microsoft.PowerShell.Commands
 
                             // FirstFourDayWeek and DayOfWeek.Monday is from ISO 8601
                             sb.Append(StringUtil.Format("{0:00}", calender.GetWeekOfYear(normalizedDatetime,
-                                                                                        CalendarWeekRule.FirstFourDayWeek,
-                                                                                        DayOfWeek.Monday)));
+                                CalendarWeekRule.FirstFourDayWeek,
+                                DayOfWeek.Monday)));
                             break;
 
                         case 'W':
@@ -509,7 +530,7 @@ namespace Microsoft.PowerShell.Commands
                             break;
 
                         case 'w':
-                            sb.Append((int)dateTime.DayOfWeek);
+                            sb.Append((int) dateTime.DayOfWeek);
                             break;
 
                         case 'X':
