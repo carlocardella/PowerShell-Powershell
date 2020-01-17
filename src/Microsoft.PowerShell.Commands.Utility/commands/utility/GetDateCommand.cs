@@ -244,12 +244,6 @@ namespace Microsoft.PowerShell.Commands
             DateTime dateToUse = DateTime.Now;
             int offset;
 
-            // convert to UTC
-            if (_asUTC)
-            {
-                dateToUse = dateToUse.ToUniversalTime();
-            }
-
             // use passed date object if specified
             if (_dateSpecified)
             {
@@ -304,6 +298,12 @@ namespace Microsoft.PowerShell.Commands
                 offset = Millisecond - dateToUse.Millisecond;
                 dateToUse = dateToUse.AddMilliseconds(offset);
                 dateToUse = dateToUse.Subtract(TimeSpan.FromTicks(dateToUse.Ticks % 10000));
+            }
+
+            // convert to UTC
+            if (_asUTC)
+            {
+                dateToUse = dateToUse.ToUniversalTime();
             }
 
             if (UFormat != null)
