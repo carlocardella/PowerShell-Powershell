@@ -4,23 +4,7 @@
 Describe 'ForEach-Object -Parallel Basic Tests' -Tags 'CI' {
 
     BeforeAll {
-
-        $skipTest = -not $EnabledExperimentalFeatures.Contains('PSForEachObjectParallel')
-        if ($skipTest) {
-            Write-Verbose "Test Suite Skipped. The test suite requires the experimental feature 'PSForEachObjectParallel' to be enabled." -Verbose
-            $originalDefaultParameterValues = $PSDefaultParameterValues.Clone()
-            $PSDefaultParameterValues["it:skip"] = $true
-        }
-        else {
-            $sb = { "Hello!" }
-        }
-    }
-
-    AfterAll {
-
-        if ($skipTest) {
-            $global:PSDefaultParameterValues = $originalDefaultParameterValues
-        }
+        $sb = { "Hello!" }
     }
 
     It "Verifies dollar underbar variable" {
@@ -88,7 +72,7 @@ Describe 'ForEach-Object -Parallel Basic Tests' -Tags 'CI' {
     }
 
     It 'Verifies debug data streaming' {
-    
+
         $actualDebug = 1..1 | ForEach-Object -Parallel { Write-Debug "Debug!" -Debug } -Debug 5>&1
         $actualDebug.Message | Should -BeExactly 'Debug!'
     }
@@ -105,7 +89,7 @@ Describe 'ForEach-Object -Parallel Basic Tests' -Tags 'CI' {
     }
 
     It 'Verifies error for script block piped variable' {
-    
+
         $actualError = $sb | ForEach-Object -Parallel { "Hello" } 2>&1
         $actualError.FullyQualifiedErrorId | Should -BeExactly 'ParallelPipedInputObjectCannotBeScriptBlock,Microsoft.PowerShell.Commands.ForEachObjectCommand'
     }
@@ -115,18 +99,16 @@ Describe 'ForEach-Object -Parallel Basic Tests' -Tags 'CI' {
         $results = 1..1 | ForEach-Object -Parallel { $ExecutionContext.SessionState.LanguageMode }
         $results | Should -BeExactly 'FullLanguage'
     }
+
+    It 'Verifies that the current working directory is preserved' {
+        $parallelScriptLocation = 1..1 | ForEach-Object -Parallel { $PWD }
+        $parallelScriptLocation.Path | Should -BeExactly $PWD.Path
+    }
 }
 
 Describe 'ForEach-Object -Parallel common parameters' -Tags 'CI' {
 
     BeforeAll {
-
-        $skipTest = -not $EnabledExperimentalFeatures.Contains('PSForEachObjectParallel')
-        if ($skipTest) {
-            Write-Verbose "Test Suite Skipped. The test suite requires the experimental feature 'PSForEachObjectParallel' to be enabled." -Verbose
-            $originalDefaultParameterValues = $PSDefaultParameterValues.Clone()
-            $PSDefaultParameterValues["it:skip"] = $true
-        }
 
         # Test cases
         $TestCasesNotSupportedCommonParameters = @(
@@ -177,10 +159,6 @@ Describe 'ForEach-Object -Parallel common parameters' -Tags 'CI' {
     }
 
     AfterAll {
-        if ($skipTest) {
-            $global:PSDefaultParameterValues = $originalDefaultParameterValues
-        }
-
         $global:actualVariable = $null
     }
 
@@ -201,23 +179,6 @@ Describe 'ForEach-Object -Parallel common parameters' -Tags 'CI' {
 }
 
 Describe 'ForEach-Object -Parallel -AsJob Basic Tests' -Tags 'CI' {
-
-    BeforeAll {
-
-        $skipTest = -not $EnabledExperimentalFeatures.Contains('PSForEachObjectParallel')
-        if ($skipTest) {
-            Write-Verbose "Test Suite Skipped. The test suite requires the experimental feature 'PSForEachObjectParallel' to be enabled." -Verbose
-            $originalDefaultParameterValues = $PSDefaultParameterValues.Clone()
-            $PSDefaultParameterValues["it:skip"] = $true
-        }
-    }
-
-    AfterAll {
-
-        if ($skipTest) {
-            $global:PSDefaultParameterValues = $originalDefaultParameterValues
-        }
-    }
 
     It 'Verifies TimeoutSeconds parameter is excluded from AsJob' {
 
@@ -344,26 +305,16 @@ Describe 'ForEach-Object -Parallel -AsJob Basic Tests' -Tags 'CI' {
         $job.ChildJobs[0].Command | Should -BeExactly '"Hello"'
         $job | Wait-Job | Remove-Job
     }
+
+    It 'Verifies that the current working directory is preserved' {
+        $job = 1..1 | ForEach-Object -AsJob -Parallel { $PWD }
+        $parallelScriptLocation = $job | Wait-Job | Receive-Job
+        $job | Remove-Job
+        $parallelScriptLocation.Path | Should -BeExactly $PWD.Path
+    }
 }
 
 Describe 'ForEach-Object -Parallel Functional Tests' -Tags 'Feature' {
-
-    BeforeAll {
-
-        $skipTest = -not $EnabledExperimentalFeatures.Contains('PSForEachObjectParallel')
-        if ($skipTest) {
-            Write-Verbose "Test Suite Skipped. The test suite requires the experimental feature 'PSForEachObjectParallel' to be enabled." -Verbose
-            $originalDefaultParameterValues = $PSDefaultParameterValues.Clone()
-            $PSDefaultParameterValues["it:skip"] = $true
-        }
-    }
-
-    AfterAll {
-
-        if ($skipTest) {
-            $global:PSDefaultParameterValues = $originalDefaultParameterValues
-        }
-    }
 
     It 'Verifies job queuing and throttle limit' {
 
@@ -405,7 +356,7 @@ Describe 'ForEach-Object -Parallel Functional Tests' -Tags 'Feature' {
 
     It 'Verifies timeout and throttle parameters' {
 
-        # With ThrottleLimit set to 1, the two 60 second long script blocks will run sequentially, 
+        # With ThrottleLimit set to 1, the two 60 second long script blocks will run sequentially,
         # until the timeout in 5 seconds.
         $results = 1..2 | ForEach-Object -Parallel { "Output $_"; Start-Sleep -Seconds 60 } -TimeoutSeconds 5 -ThrottleLimit 1 2>&1
         $results.Count | Should -BeExactly 2

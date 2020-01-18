@@ -3,11 +3,11 @@
 
 Describe "Get-Date DRT Unit Tests" -Tags "CI" {
     It "Get-Date with all parameters returns proper results" {
-        $date = [datetime]::Now + ([timespan]::new(0,0,30))
+        $date = [datetime]::Now + ([timespan]::new(0, 0, 30))
         $result = Get-Date -Date $date -Year 1973 -Month 2 -Day 22 -Hour 15 -Minute 40 -Second 10 -Millisecond 200
         $result | Should -BeOfType Datetime
         $result.Year | Should -Be 1973
-        $result.Month| Should -Be 2
+        $result.Month | Should -Be 2
         $result.Day | Should -Be 22
         $result.Hour | Should -Be 15
         $result.Minute | Should -Be 40
@@ -28,7 +28,7 @@ Describe "Get-Date DRT Unit Tests" -Tags "CI" {
         $seconds = Get-date -Date:"Jan 1, 2020Z" -UFormat:"%s"
 
         $seconds | Should -Be "1577836800"
-        if ($isLinux) {
+        if ($IsLinux) {
             $dateString = "01/01/2020 UTC"
             if ( (Get-PlatformInfo) -eq "alpine" ) {
                 $dateString = "2020-01-01"
@@ -52,26 +52,41 @@ Describe "Get-Date DRT Unit Tests" -Tags "CI" {
 
     # The 'week of year' test cases is from https://en.wikipedia.org/wiki/ISO_week_date
     It "using -uformat 'V' produces the correct output" -TestCases @(
-        @{date="2005-01-01"; week = "53"},
-        @{date="2005-01-02"; week = "53"},
-        @{date="2005-12-31"; week = "52"},
-        @{date="2006-01-01"; week = "52"},
-        @{date="2006-01-02"; week = "01"},
-        @{date="2006-12-31"; week = "52"},
-        @{date="2007-01-01"; week = "01"},
-        @{date="2007-12-30"; week = "52"},
-        @{date="2007-12-31"; week = "01"},
-        @{date="2008-01-01"; week = "01"},
-        @{date="2008-12-28"; week = "52"},
-        @{date="2008-12-29"; week = "01"},
-        @{date="2008-12-30"; week = "01"},
-        @{date="2008-12-31"; week = "01"},
-        @{date="2009-01-01"; week = "01"},
-        @{date="2009-12-31"; week = "53"},
-        @{date="2010-01-01"; week = "53"},
-        @{date="2010-01-02"; week = "53"},
-        @{date="2010-01-03"; week = "53"},
-        @{date="2010-01-04"; week = "01"}
+        @{date = "1998-01-02"; week = "01" },
+        @{date = "1998-01-03"; week = "01" },
+        @{date = "2003-01-03"; week = "01" },
+        @{date = "2004-01-02"; week = "01" },
+        @{date = "2004-01-03"; week = "01" },
+        @{date = "2005-01-01"; week = "53" },
+        @{date = "2005-01-02"; week = "53" },
+        @{date = "2005-12-31"; week = "52" },
+        @{date = "2006-01-01"; week = "52" },
+        @{date = "2006-01-02"; week = "01" },
+        @{date = "2006-12-31"; week = "52" },
+        @{date = "2007-01-01"; week = "01" },
+        @{date = "2007-12-30"; week = "52" },
+        @{date = "2007-12-31"; week = "01" },
+        @{date = "2008-01-01"; week = "01" },
+        @{date = "2008-12-28"; week = "52" },
+        @{date = "2008-12-29"; week = "01" },
+        @{date = "2008-12-30"; week = "01" },
+        @{date = "2008-12-31"; week = "01" },
+        @{date = "2009-01-01"; week = "01" },
+        @{date = "2009-01-02"; week = "01" },
+        @{date = "2009-01-03"; week = "01" },
+        @{date = "2009-12-31"; week = "53" },
+        @{date = "2010-01-01"; week = "53" },
+        @{date = "2010-01-02"; week = "53" },
+        @{date = "2010-01-03"; week = "53" },
+        @{date = "2010-01-04"; week = "01" },
+        @{date = "2014-01-03"; week = "01" },
+        @{date = "2015-01-02"; week = "01" },
+        @{date = "2015-01-03"; week = "01" },
+        @{date = "2020-01-03"; week = "01" },
+        @{date = "2025-01-03"; week = "01" },
+        @{date = "2026-01-02"; week = "01" },
+        @{date = "2026-01-03"; week = "01" },
+        @{date = "2031-01-03"; week = "01" }
     ) {
         param($date, $week)
         Get-date -Date $date -uformat %V | Should -BeExactly $week
@@ -88,7 +103,7 @@ Describe "Get-Date DRT Unit Tests" -Tags "CI" {
     It "Get-date works with pipeline input" {
         $x = new-object System.Management.Automation.PSObject
         $x | add-member NoteProperty Date ([DateTime]::Now)
-        $y = @($x,$x)
+        $y = @($x, $x)
         ($y | Get-date).Length | Should -Be 2
     }
 
@@ -96,14 +111,12 @@ Describe "Get-Date DRT Unit Tests" -Tags "CI" {
         $folder = "GetDateTest"
         $pathString = Join-Path -Path $TestDrive -ChildPath $folder
         New-Item -Path $TestDrive -Name $folder -ItemType directory -Force
-        for($i = 0; $i -lt 10; $i++)
-        {
+        for ($i = 0; $i -lt 10; $i++) {
             $temp = [guid]::NewGuid()
             $pathString2 = Join-Path -Path $pathString -ChildPath $temp
             New-Item -Path $pathString -Name $temp -ItemType file -Force
 
-            for($j = 0; $j -lt 100; $j++)
-            {
+            for ($j = 0; $j -lt 100; $j++) {
                 Add-Content -Path $pathString2 -Value $j
             }
 
@@ -115,8 +128,7 @@ Describe "Get-Date DRT Unit Tests" -Tags "CI" {
         $result1.Length | Should -Be 10
         $result1.Length -eq $result2.Length | Should -BeTrue
 
-        for($i = 0; $i -lt $result1.Length; $i++)
-        {
+        for ($i = 0; $i -lt $result1.Length; $i++) {
             $result1[$i] -eq $result2[$i] | Should -BeTrue
         }
 
@@ -144,7 +156,7 @@ Describe "Get-Date" -Tags "CI" {
     }
 
     It "Should have colons when ToString method is used" {
-        (Get-Date).ToString().Contains(":")                   | Should -BeTrue
+        (Get-Date).ToString().Contains(":") | Should -BeTrue
         (Get-Date -DisplayHint Time).ToString().Contains(":") | Should -BeTrue
         (Get-Date -DisplayHint Date).ToString().Contains(":") | Should -BeTrue
     }
@@ -159,18 +171,29 @@ Describe "Get-Date" -Tags "CI" {
         (Get-Date -Format g).Contains("/") -and (Get-Date -Format g).Contains(":") | Should -BeTrue
         (Get-Date -Format G).Contains("/") -and (Get-Date -Format G).Contains(":") | Should -BeTrue
         (Get-Date -Format m).Contains(",") -or `
-        (Get-Date -Format m).Contains(":")  -or `
+        (Get-Date -Format m).Contains(":") -or `
         (Get-Date -Format m).Contains("/") | Should -BeFalse
     }
 
     It "Should check that Get-Date can return the correct datetime from the system time" {
         $timeDifference = $(Get-Date).Subtract([System.DateTime]::Now)
 
-        $timeDifference.Days         | Should -Be 0
-        $timeDifference.Hours        | Should -Be 0
-        $timeDifference.Minutes      | Should -Be 0
+        $timeDifference.Days | Should -Be 0
+        $timeDifference.Hours | Should -Be 0
+        $timeDifference.Minutes | Should -Be 0
         $timeDifference.Milliseconds | Should -BeLessThan 1
-        $timeDifference.Ticks        | Should -BeLessThan 10000
+        $timeDifference.Ticks | Should -BeLessThan 10000
+    }
+
+    It "Should return the passed date as UTC" {
+        $date = '1/13/1974 12pm'
+
+        (Get-Date $date).ToString() | Should -Be '1/13/1974 12:00:00 PM'
+        (Get-Date $date -asUTC).ToString() | Should -Be '1/13/1974 8:00:00 PM'
+        (Get-Date -Date $date -Format "yyyy-MM-dd HH:mm:ss") | Should -Be '1974-01-13 12:00:00'
+        (Get-Date -Date $date -Format "yyyy-MM-dd HH:mm:ss" -AsUTC) | Should -Be '1974-01-13 20:00:00'
+        Get-Date -Date $date -Format:"MMM-dd-yy HH:mm" | Should -Be "Jan-13-74 12:00"
+        Get-Date -Date $date -Format:"MMM-dd-yy HH:mm" -AsUTC | Should -Be "Jan-13-74 20:00"
     }
 }
 
@@ -197,83 +220,83 @@ Describe "Get-Date -UFormat tests" -Tags "CI" {
     }
 
     It "Get-Date -UFormat <format>" -TestCases @(
-            # Some format specifiers is locale sensetive:
-            #   - and tests work on EN-US only
-            #   - and can not be full compatible with Unix 'date' utility.
-            # Commented tests mean not implemented or broken format specifiers.
-            @{ date = $date1; format = "%a"; result = $shortDay1 }  # locale's abbreviated weekday name
-            @{ date = $date1; format = "%A"; result = $fullDay1 }   # locale's full weekday name
-            @{ date = $date1; format = "%b"; result = $shortMonth1 }# locale's abbreviated month name
-            @{ date = $date1; format = "%B"; result = $fullMonth1 } # locale's full month name
-            @{ date = $date1; format = "%c"; result = "$shortDay1 05 $shortMonth1 2030 01:02:03" } # locale's date and time (e.g., Thu 03 Mar 2005 23:05:25)
-                                                                    # We can not get compatibility with Unix
-                                                                    #
-            @{ date = $date1; format = "%C"; result = "20" }        # century; like %Y, except omit last two digits (e.g., 20)
-            @{ date = $date1; format = "%d"; result = "05" }        # day of month (e.g., 01)
-            @{ date = $date1; format = "%D"; result = "04/05/30" }  # date; same as %m/%d/%y
-            @{ date = $date1; format = "%e"; result = " 5" }        # day of month, space padded; same as %_d
-            @{ date = $date2; format = "%e"; result = "15" }
-            @{ date = $date1; format = "%F"; result = "2030-04-05" }# Equivalent to %Y-%m-%d (the ISO 8601 date format).
-            #@{ date = $date1; format = "%g"; result = "" }         # last two digits of year of ISO week number (see %G)
-                                                                    # TODO: need review. Broken C# implementation.
-                                                                    #
-            #@{ date = $date1; format = "%G"; result = "" }         # year of ISO week number (see %V); normally useful only with %V
-                                                                    # TODO: need review. Broken C# implementation.
-                                                                    #
-            @{ date = $date1; format = "%h"; result = $shortMonth1 }# same as %b
-            @{ date = $date1; format = "%H"; result = "01" }        # hour (00..23)
-            @{ date = $date2; format = "%H"; result = "13" }
-            @{ date = $date1; format = "%I"; result = "01" }        # hour (01..12)
-            @{ date = $date2; format = "%I"; result = "01" }
-            @{ date = $date1; format = "%j"; result = "095" }       # day of year (001..366)
-            @{ date = $date1; format = "%k"; result = " 1" }        # hour, space padded ( 0..23); same as %_H
-            @{ date = $date2; format = "%k"; result = "13" }
-            @{ date = $date1; format = "%l"; result = " 1" }        # hour, space padded ( 1..12); same as %_I
-            @{ date = $date2; format = "%l"; result = " 1" }
-            @{ date = $date1; format = "%m"; result = "04" }        # month (01..12)
-            @{ date = $date1; format = "%M"; result = "02" }        # minute (00..59)
-            #@{ date = $date1; format = "%n"; result = "`n" }      # a newline
-            #@{ date = $date1; format = "%N"; result = "090000000" }# nanoseconds (000000000..999999999)
-            @{ date = $date1; format = "%p"; result = $amUpper1 }   # locale's equivalent of either AM or PM; blank if not known
-            #@{ date = $date1; format = "%P"; result = $amLower1 }  # like %p, but lower case
-            #@{ date = $date1; format = "%q"; result = "" }         # quarter of year (1..4) - not implemented on Ununtu 17.10
-            @{ date = $date1; format = "%r"; result = "01:02:03 AM" }# locale's 12-hour clock time (e.g., 11:11:04 PM)
-            @{ date = $date3; format = "%r"; result = "09:02:03 PM" }
-            @{ date = $date1; format = "%R"; result = "01:02" }     # 24-hour hour and minute; same as %H:%M
-            @{ date = $date3; format = "%R"; result = "21:02" }
-            #@{ date = $date1; format = "%s"; result = "1901563323" }# Separate tests is in the file. Seconds since 1970-01-01 00:00:00 UTC
-                                                                    # TODO: need review
-                                                                    #
-                                                                    @{ date = $date1; format = "%S"; result = "03" }        # second (00..60)
-            #@{ date = $date1; format = "%t"; result = "`t" }       # a tab
-            @{ date = $date1; format = "%T"; result = "01:02:03" }  # time; same as %H:%M:%S
-            @{ date = $date1; format = "%u"; result = "5" }         # day of week (1..7); 1 is Monday
-            @{ date = $date1; format = "%U"; result = "13" }        # week number of year, with Sunday as first day of week (00..53)
-                                                                    # TODO: need review.
-                                                                    #
-            #@{ date = $date1; format = "%V"; result = "" }         # Separate tests is in the file. ISO week number, with Monday as first day of week (01..53)
-            #@{ date = $date1; format = "%w"; result = "" }         # day of week (0..6); 0 is Sunday
-            @{ date = $date1; format = "%W"; result = "13" }        # week number of year, with Monday as first day of week (00..53)
-                                                                    # TODO: need review compatibility with Unix
-                                                                    #
-            @{ date = $date1; format = "%x"; result = "04/05/30" }  # locale's date representation (e.g., 12/31/99)
-                                                                    # TODO: need review compatibility with Unix
-                                                                    #
-            #@{ date = $date1; format = "%X"; result = $fullTime1 } # locale's time representation (e.g., 23:13:48)
-                                                                    # TODO: need review compatibility with Unix. Broken C# implementation.
-                                                                    #
-            @{ date = $date1; format = "%y"; result = "30" }        # last two digits of year (00..99)
-            @{ date = $date1; format = "%Y"; result = "2030" }      # year
-            #@{ date = $date1; format = "%z"; result = "" }         # +hhmm numeric time zone (e.g., -0400)
-            #@{ date = $date1; format = "%:z"; result = "" }        # +hh:mm numeric time zone (e.g., -04:00)
-            #@{ date = $date1; format = "%::z"; result = "" }       # +hh:mm:ss numeric time zone (e.g., -04:00:00)
-            #@{ date = $date1; format = "%:::z"; result = "" }      # numeric time zone with : to necessary precision (e.g., -04, +05:30)
-            @{ date = $date1; format = "%Z"; result = $timeZone1 }  # alphabetic time zone abbreviation (e.g., EDT)
-                                                                    # We can only check a time zone format from .Net
-                                                                    # and can not check compatibility with Unix
-        ) {
-            param($date, $format, $result)
+        # Some format specifiers is locale sensetive:
+        #   - and tests work on EN-US only
+        #   - and can not be full compatible with Unix 'date' utility.
+        # Commented tests mean not implemented or broken format specifiers.
+        @{ date = $date1; format = "%a"; result = $shortDay1 }  # locale's abbreviated weekday name
+        @{ date = $date1; format = "%A"; result = $fullDay1 }   # locale's full weekday name
+        @{ date = $date1; format = "%b"; result = $shortMonth1 }# locale's abbreviated month name
+        @{ date = $date1; format = "%B"; result = $fullMonth1 } # locale's full month name
+        @{ date = $date1; format = "%c"; result = "$shortDay1 05 $shortMonth1 2030 01:02:03" } # locale's date and time (e.g., Thu 03 Mar 2005 23:05:25)
+        # We can not get compatibility with Unix
+        #
+        @{ date = $date1; format = "%C"; result = "20" }        # century; like %Y, except omit last two digits (e.g., 20)
+        @{ date = $date1; format = "%d"; result = "05" }        # day of month (e.g., 01)
+        @{ date = $date1; format = "%D"; result = "04/05/30" }  # date; same as %m/%d/%y
+        @{ date = $date1; format = "%e"; result = " 5" }        # day of month, space padded; same as %_d
+        @{ date = $date2; format = "%e"; result = "15" }
+        @{ date = $date1; format = "%F"; result = "2030-04-05" }# Equivalent to %Y-%m-%d (the ISO 8601 date format).
+        #@{ date = $date1; format = "%g"; result = "" }         # last two digits of year of ISO week number (see %G)
+        # TODO: need review. Broken C# implementation.
+        #
+        #@{ date = $date1; format = "%G"; result = "" }         # year of ISO week number (see %V); normally useful only with %V
+        # TODO: need review. Broken C# implementation.
+        #
+        @{ date = $date1; format = "%h"; result = $shortMonth1 }# same as %b
+        @{ date = $date1; format = "%H"; result = "01" }        # hour (00..23)
+        @{ date = $date2; format = "%H"; result = "13" }
+        @{ date = $date1; format = "%I"; result = "01" }        # hour (01..12)
+        @{ date = $date2; format = "%I"; result = "01" }
+        @{ date = $date1; format = "%j"; result = "095" }       # day of year (001..366)
+        @{ date = $date1; format = "%k"; result = " 1" }        # hour, space padded ( 0..23); same as %_H
+        @{ date = $date2; format = "%k"; result = "13" }
+        @{ date = $date1; format = "%l"; result = " 1" }        # hour, space padded ( 1..12); same as %_I
+        @{ date = $date2; format = "%l"; result = " 1" }
+        @{ date = $date1; format = "%m"; result = "04" }        # month (01..12)
+        @{ date = $date1; format = "%M"; result = "02" }        # minute (00..59)
+        #@{ date = $date1; format = "%n"; result = "`n" }      # a newline
+        #@{ date = $date1; format = "%N"; result = "090000000" }# nanoseconds (000000000..999999999)
+        @{ date = $date1; format = "%p"; result = $amUpper1 }   # locale's equivalent of either AM or PM; blank if not known
+        #@{ date = $date1; format = "%P"; result = $amLower1 }  # like %p, but lower case
+        #@{ date = $date1; format = "%q"; result = "" }         # quarter of year (1..4) - not implemented on Ununtu 17.10
+        @{ date = $date1; format = "%r"; result = "01:02:03 AM" }# locale's 12-hour clock time (e.g., 11:11:04 PM)
+        @{ date = $date3; format = "%r"; result = "09:02:03 PM" }
+        @{ date = $date1; format = "%R"; result = "01:02" }     # 24-hour hour and minute; same as %H:%M
+        @{ date = $date3; format = "%R"; result = "21:02" }
+        #@{ date = $date1; format = "%s"; result = "1901563323" }# Separate tests is in the file. Seconds since 1970-01-01 00:00:00 UTC
+        # TODO: need review
+        #
+        @{ date = $date1; format = "%S"; result = "03" }        # second (00..60)
+        #@{ date = $date1; format = "%t"; result = "`t" }       # a tab
+        @{ date = $date1; format = "%T"; result = "01:02:03" }  # time; same as %H:%M:%S
+        @{ date = $date1; format = "%u"; result = "5" }         # day of week (1..7); 1 is Monday
+        @{ date = $date1; format = "%U"; result = "13" }        # week number of year, with Sunday as first day of week (00..53)
+        # TODO: need review.
+        #
+        #@{ date = $date1; format = "%V"; result = "" }         # Separate tests is in the file. ISO week number, with Monday as first day of week (01..53)
+        #@{ date = $date1; format = "%w"; result = "" }         # day of week (0..6); 0 is Sunday
+        @{ date = $date1; format = "%W"; result = "13" }        # week number of year, with Monday as first day of week (00..53)
+        # TODO: need review compatibility with Unix
+        #
+        @{ date = $date1; format = "%x"; result = "04/05/30" }  # locale's date representation (e.g., 12/31/99)
+        # TODO: need review compatibility with Unix
+        #
+        #@{ date = $date1; format = "%X"; result = $fullTime1 } # locale's time representation (e.g., 23:13:48)
+        # TODO: need review compatibility with Unix. Broken C# implementation.
+        #
+        @{ date = $date1; format = "%y"; result = "30" }        # last two digits of year (00..99)
+        @{ date = $date1; format = "%Y"; result = "2030" }      # year
+        #@{ date = $date1; format = "%z"; result = "" }         # +hhmm numeric time zone (e.g., -0400)
+        #@{ date = $date1; format = "%:z"; result = "" }        # +hh:mm numeric time zone (e.g., -04:00)
+        #@{ date = $date1; format = "%::z"; result = "" }       # +hh:mm:ss numeric time zone (e.g., -04:00:00)
+        #@{ date = $date1; format = "%:::z"; result = "" }      # numeric time zone with : to necessary precision (e.g., -04, +05:30)
+        @{ date = $date1; format = "%Z"; result = $timeZone1 }  # alphabetic time zone abbreviation (e.g., EDT)
+        # We can only check a time zone format from .Net
+        # and can not check compatibility with Unix
+    ) {
+        param($date, $format, $result)
 
-            Get-Date -Date $date -UFormat $format | Should -BeExactly $result
+        Get-Date -Date $date -UFormat $format | Should -BeExactly $result
     }
 }

@@ -25,7 +25,7 @@ namespace Microsoft.PowerShell.Commands
     /// Cmdlet to create a new module manifest file.
     /// </summary>
     [Cmdlet(VerbsCommon.New, "ModuleManifest", SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.Low,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=141555")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096487")]
     [OutputType(typeof(string))]
     public sealed class NewModuleManifestCommand : PSCmdlet
     {
@@ -477,7 +477,7 @@ namespace Microsoft.PowerShell.Commands
         /// Gets or sets whether or not the module requires explicit user acceptance for install/update/save.
         /// </summary>
         [Parameter]
-        public SwitchParameter RequireLicenseAcceptance { get; set; } = true;
+        public SwitchParameter RequireLicenseAcceptance { get; set; }
 
         /// <summary>
         /// Gets or sets the external module dependencies.

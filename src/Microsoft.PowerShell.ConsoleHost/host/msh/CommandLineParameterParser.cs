@@ -198,7 +198,10 @@ namespace Microsoft.PowerShell
 
         internal CommandLineParameterParser(PSHostUserInterface hostUI, string bannerText, string helpText)
         {
-            if (hostUI == null) { throw new PSArgumentNullException("hostUI"); }
+            if (hostUI == null)
+            {
+                throw new PSArgumentNullException(nameof(hostUI));
+            }
 
             _hostUI = hostUI;
 
@@ -531,7 +534,7 @@ namespace Microsoft.PowerShell
 
                 string switchKey = switchKeyResults.SwitchKey;
 
-                if (MatchSwitch(switchKey, match: "settingsfile", smallestUnambiguousMatch: "settings"))
+                if (!string.IsNullOrEmpty(switchKey) && MatchSwitch(switchKey, match: "settingsfile", smallestUnambiguousMatch: "settings"))
                 {
                     // parse setting file arg and don't write error as there is no host yet.
                     if (!TryParseSettingFileHelper(args, ++i, parser: null))
@@ -1015,6 +1018,11 @@ namespace Microsoft.PowerShell
             if (_showBanner && !_showHelp)
             {
                 DisplayBanner();
+
+                if (UpdatesNotification.CanNotifyUpdates)
+                {
+                    UpdatesNotification.ShowUpdateNotification(_hostUI);
+                }
             }
 
             Dbg.Assert(

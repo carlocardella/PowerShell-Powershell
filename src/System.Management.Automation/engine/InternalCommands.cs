@@ -58,7 +58,7 @@ namespace Microsoft.PowerShell.Commands
     /// to each element of the pipeline.
     /// </summary>
     [Cmdlet("ForEach", "Object", SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.Low,
-        DefaultParameterSetName = ForEachObjectCommand.ScriptBlockSet, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113300",
+        DefaultParameterSetName = ForEachObjectCommand.ScriptBlockSet, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096867",
         RemotingCapability = RemotingCapability.None)]
     public sealed class ForEachObjectCommand : PSCmdlet, IDisposable
     {
@@ -234,7 +234,6 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Gets or sets a script block to run in parallel for each pipeline object.
         /// </summary>
-        [Experimental("PSForEachObjectParallel", ExperimentAction.Show)]
         [Parameter(Mandatory = true, ParameterSetName = ForEachObjectCommand.ParallelParameterSet)]
         public ScriptBlock Parallel { get; set; }
 
@@ -242,7 +241,6 @@ namespace Microsoft.PowerShell.Commands
         /// Gets or sets the maximum number of concurrently running scriptblocks on separate threads.
         /// The default number is 5.
         /// </summary>
-        [Experimental("PSForEachObjectParallel", ExperimentAction.Show)]
         [Parameter(ParameterSetName = ForEachObjectCommand.ParallelParameterSet)]
         [ValidateRange(1, Int32.MaxValue)]
         public int ThrottleLimit { get; set; } = 5;
@@ -251,7 +249,6 @@ namespace Microsoft.PowerShell.Commands
         /// Gets or sets a timeout time in seconds, after which the parallel running scripts will be stopped
         /// The default value is 0, indicating no timeout.
         /// </summary>
-        [Experimental("PSForEachObjectParallel", ExperimentAction.Show)]
         [Parameter(ParameterSetName = ForEachObjectCommand.ParallelParameterSet)]
         [ValidateRange(0, (Int32.MaxValue / 1000))]
         public int TimeoutSeconds { get; set; }
@@ -260,7 +257,6 @@ namespace Microsoft.PowerShell.Commands
         /// Gets or sets a flag that returns a job object immediately for the parallel operation, instead of returning after
         /// all foreach processing is completed.
         /// </summary>
-        [Experimental("PSForEachObjectParallel", ExperimentAction.Show)]
         [Parameter(ParameterSetName = ForEachObjectCommand.ParallelParameterSet)]
         public SwitchParameter AsJob { get; set; }
 
@@ -375,6 +371,7 @@ namespace Microsoft.PowerShell.Commands
         private PSTaskJob _taskJob;
         private PSDataCollection<System.Management.Automation.PSTasks.PSTask> _taskCollection;
         private Exception _taskCollectionException;
+        private string _currentLocationPath;
 
         private void InitParallelParameterSet()
         {
@@ -391,6 +388,15 @@ namespace Microsoft.PowerShell.Commands
                             "ParallelCommonParametersNotSupported",
                             ErrorCategory.NotImplemented,
                             this));
+            }
+
+            // Get the current working directory location, if available.
+            try
+            {
+                _currentLocationPath = SessionState.Internal.CurrentLocation.Path;
+            }
+            catch (PSInvalidOperationException)
+            {
             }
 
             bool allowUsingExpression = this.Context.SessionState.LanguageMode != PSLanguageMode.NoLanguage;
@@ -486,10 +492,10 @@ namespace Microsoft.PowerShell.Commands
                         }
                         catch (Exception ex)
                         {
-                            // Close the _taskCollection on an unexpected exception so the pool closes and
-                            // lets any running tasks complete.
                             _taskCollection.Complete();
                             _taskCollectionException = ex;
+                            _taskDataStreamWriter.Close();
+
                             break;
                         }
 
@@ -509,7 +515,8 @@ namespace Microsoft.PowerShell.Commands
         private void ProcessParallelParameterSet()
         {
             // Validate piped InputObject
-            if (_inputObject.BaseObject is ScriptBlock)
+            if (_inputObject != null &&
+                _inputObject.BaseObject is ScriptBlock)
             {
                 WriteError(
                     new ErrorRecord(
@@ -527,7 +534,8 @@ namespace Microsoft.PowerShell.Commands
                 var taskChildJob = new PSTaskChildJob(
                     Parallel,
                     _usingValuesMap,
-                    InputObject);
+                    InputObject,
+                    _currentLocationPath);
 
                 _taskJob.AddJob(taskChildJob);
 
@@ -549,6 +557,7 @@ namespace Microsoft.PowerShell.Commands
                             Parallel,
                             _usingValuesMap,
                             InputObject,
+                            _currentLocationPath,
                             _taskDataStreamWriter));
                 }
                 catch (InvalidOperationException)
@@ -570,7 +579,7 @@ namespace Microsoft.PowerShell.Commands
 
                 return;
             }
-            
+
             // Close task collection and wait for processing to complete while streaming data.
             _taskDataStreamWriter.WriteImmediate();
             _taskCollection.Complete();
@@ -1173,7 +1182,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         /// <param name="inputObject">Source object.</param>
         /// <returns>True if we are in restrictedLanguageMode.</returns>
-        private bool BlockMethodInLanguageMode(Object inputObject)
+        private bool BlockMethodInLanguageMode(object inputObject)
         {
             // Cannot invoke a method in RestrictedLanguage mode
             if (Context.LanguageMode == PSLanguageMode.RestrictedLanguage)
@@ -1249,7 +1258,7 @@ namespace Microsoft.PowerShell.Commands
     /// is passed on, otherwise it is dropped.
     /// </summary>
     [Cmdlet("Where", "Object", DefaultParameterSetName = "EqualSet",
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113423", RemotingCapability = RemotingCapability.None)]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096806", RemotingCapability = RemotingCapability.None)]
     public sealed class WhereObjectCommand : PSCmdlet
     {
         /// <summary>
@@ -2472,7 +2481,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Implements a cmdlet that sets the script debugging options.
     /// </summary>
-    [Cmdlet(VerbsCommon.Set, "PSDebug", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113398")]
+    [Cmdlet(VerbsCommon.Set, "PSDebug", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096959")]
     public sealed class SetPSDebugCommand : PSCmdlet
     {
         /// <summary>
@@ -2598,7 +2607,7 @@ namespace Microsoft.PowerShell.Commands
     /// Unlike Set-PSDebug -strict, Set-StrictMode is not engine-wide, and only
     /// affects the scope it was defined in.
     /// </summary>
-    [Cmdlet(VerbsCommon.Set, "StrictMode", DefaultParameterSetName = "Version", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113450")]
+    [Cmdlet(VerbsCommon.Set, "StrictMode", DefaultParameterSetName = "Version", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096804")]
     public class SetStrictModeCommand : PSCmdlet
     {
         /// <summary>

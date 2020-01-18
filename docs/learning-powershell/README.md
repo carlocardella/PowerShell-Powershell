@@ -26,9 +26,9 @@ At the end of this exercise, you should be able to launch the PowerShell session
 
 - Alternatively you can get the PowerShell by [building it](../../README.md#building-powershell)
 
-[inst-linux]: https://docs.microsoft.com/powershell/scripting/setup/installing-powershell-core-on-linux?view=powershell-6
-[inst-win]: https://docs.microsoft.com/powershell/scripting/setup/installing-powershell-core-on-windows?view=powershell-6
-[inst-macos]: https://docs.microsoft.com/powershell/scripting/setup/installing-powershell-core-on-macos?view=powershell-6
+[inst-linux]: https://docs.microsoft.com/powershell/scripting/install/installing-powershell-core-on-linux?view=powershell-6
+[inst-win]: https://docs.microsoft.com/powershell/scripting/install/installing-powershell-core-on-windows?view=powershell-6
+[inst-macos]: https://docs.microsoft.com/powershell/scripting/install/installing-powershell-core-on-macos?view=powershell-6
 
 ## Getting Started with PowerShell
 
@@ -109,17 +109,19 @@ Note that all bash commands should continue working on PowerShell session.
 - [Windows PowerShell in Action][in-action] by [Bruce Payette](https://github.com/brucepay)
 - [Introduction to PowerShell][powershell-intro] from Pluralsight
 - [PowerShell Training and Tutorials][lynda-training] from Lynda.com
-- [Learn Windows PowerShell in a Month of Lunches][learn-powershell] by Don Jones and Jeffrey Hicks
-
+- [Learn Windows PowerShell in a Month of Lunches][learn-win-powershell] by Don Jones and Jeffrey Hicks
+- [Learn PowerShell in a Month of Lunches][learn-powershell] by Travis Plunk (@TravisEz13),
+  Tyler Leonhardt (@tylerleonhardt), Don Jones, and Jeffery Hicks
 
 [in-action]: https://www.amazon.com/Windows-PowerShell-Action-Second-Payette/dp/1935182137
 [powershell-intro]: https://www.pluralsight.com/courses/powershell-intro
 [lynda-training]: https://www.lynda.com/PowerShell-training-tutorials/5779-0.html
-[learn-powershell]: https://www.amazon.com/Learn-Windows-PowerShell-Month-Lunches/dp/1617294160
+[learn-win-powershell]: https://www.amazon.com/Learn-Windows-PowerShell-Month-Lunches/dp/1617294160
+[learn-powershell]: https://www.manning.com/books/learn-powershell-in-a-month-of-lunches-linux-and-macos-edition
 
 [getstarted-with-powershell]: https://channel9.msdn.com/Series/GetStartedPowerShell3
 [why-learn-powershell]: https://blogs.technet.microsoft.com/heyscriptingguy/2014/10/18/weekend-scripter-why-learn-powershell/
-[Using Windows PowerShell for Administration]: https://docs.microsoft.com/powershell/scripting/getting-started/fundamental/using-windows-powershell-for-administration?view=powershell-6
+[Using Windows PowerShell for Administration]: https://docs.microsoft.com/powershell/scripting/samples/sample-scripts-for-administration?view=powershell-6
 [ebook-from-Idera]:https://www.idera.com/resourcecentral/whitepapers/powershell-ebook
 [channel9-learn-powershell]: https://channel9.msdn.com/Search?term=powershell#ch9Search
 [idera-learn-powershell]: https://community.idera.com/database-tools/powershell/video_library/

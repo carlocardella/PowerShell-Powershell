@@ -37,7 +37,7 @@ namespace Microsoft.PowerShell.Commands
     [OutputType(typeof(FileSecurity), ProviderCmdlet = ProviderCmdlet.SetAcl)]
     [OutputType(typeof(string), typeof(PathInfo), ProviderCmdlet = ProviderCmdlet.ResolvePath)]
     [OutputType(typeof(PathInfo), ProviderCmdlet = ProviderCmdlet.PushLocation)]
-    [OutputType(typeof(Byte), typeof(string), ProviderCmdlet = ProviderCmdlet.GetContent)]
+    [OutputType(typeof(byte), typeof(string), ProviderCmdlet = ProviderCmdlet.GetContent)]
     [OutputType(typeof(FileInfo), ProviderCmdlet = ProviderCmdlet.GetItem)]
     [OutputType(typeof(FileInfo), typeof(DirectoryInfo), ProviderCmdlet = ProviderCmdlet.GetChildItem)]
     [OutputType(typeof(FileSecurity), typeof(DirectorySecurity), ProviderCmdlet = ProviderCmdlet.GetAcl)]
@@ -146,7 +146,12 @@ namespace Microsoft.PowerShell.Commands
                     else if (string.IsNullOrEmpty(item))
                     {
                         // This handles the trailing slash case
-                        continue;
+                        if (!exactPath.EndsWith(StringLiterals.DefaultPathSeparator))
+                        {
+                            exactPath += StringLiterals.DefaultPathSeparator;
+                        }
+
+                        break;
                     }
                     else if (item.Contains('~'))
                     {
@@ -155,13 +160,26 @@ namespace Microsoft.PowerShell.Commands
                     }
                     else
                     {
-                        exactPath = Directory.GetFileSystemEntries(exactPath, item).First();
+                        // Use GetFileSystemEntries to get the correct casing of this element
+                        try
+                        {
+                            var entries = Directory.GetFileSystemEntries(exactPath, item);
+                            if (entries.Length > 0)
+                            {
+                                exactPath = entries.First();
+                            }
+                            else
+                            {
+                                // If previous call didn't return anything, something failed so we just return the path we were given
+                                return path;
+                            }
+                        }
+                        catch
+                        {
+                            // If we can't enumerate, we stop and just return the original path
+                            return path;
+                        }
                     }
-                }
-
-                if (path.EndsWith(StringLiterals.DefaultPathSeparator))
-                {
-                    return exactPath + StringLiterals.DefaultPathSeparator;
                 }
 
                 return exactPath;
@@ -1845,7 +1863,7 @@ namespace Microsoft.PowerShell.Commands
                                 //  a) the user has asked to with the -FollowSymLinks switch parameter and
                                 //  b) the directory pointed to by the symlink has not already been visited,
                                 //     preventing symlink loops.
-                                //  c) it is not a reparse point with a target
+                                //  c) it is not a reparse point with a target (not OneDrive or an AppX link).
                                 if (tracker == null)
                                 {
                                     if (InternalSymbolicLinkLinkCodeMethods.IsReparsePointWithTarget(recursiveDirectory))
@@ -3953,6 +3971,10 @@ namespace Microsoft.PowerShell.Commands
                             WriteError(new ErrorRecord(unAuthorizedAccessException, "CopyFileInfoItemUnauthorizedAccessError", ErrorCategory.PermissionDenied, file));
                         }
                     }
+                    catch (IOException ioException)
+                    {
+                        WriteError(new ErrorRecord(ioException, "CopyFileInfoItemIOError", ErrorCategory.WriteError, file));
+                    }
                 }
             }
         }
@@ -5033,7 +5055,7 @@ namespace Microsoft.PowerShell.Commands
                         {
                             // Add the base path back on so that it can be used for
                             // processing
-                            if (!result.StartsWith(basePath, StringComparison.CurrentCulture))
+                            if (!result.StartsWith(basePath, StringComparison.Ordinal))
                             {
                                 result = MakePath(basePath, result);
                             }
@@ -5097,7 +5119,7 @@ namespace Microsoft.PowerShell.Commands
                             result = files.First();
 #endif
 
-                            if (result.StartsWith(basePath, StringComparison.CurrentCulture))
+                            if (result.StartsWith(basePath, StringComparison.Ordinal))
                             {
                                 result = result.Substring(basePath.Length);
                             }
@@ -7712,6 +7734,7 @@ namespace Microsoft.PowerShell.Commands
         // dwDesiredAccess of CreateFile
         internal enum FileDesiredAccess : uint
         {
+            GenericZero = 0,
             GenericRead = 0x80000000,
             GenericWrite = 0x40000000,
             GenericExecute = 0x20000000,
@@ -7917,7 +7940,11 @@ namespace Microsoft.PowerShell.Commands
             if (instance.BaseObject is FileSystemInfo fileSysInfo)
             {
 #if !UNIX
-                using (SafeFileHandle handle = OpenReparsePoint(fileSysInfo.FullName, FileDesiredAccess.GenericRead))
+                // We set accessMode parameter to zero because documentation says:
+                // If this parameter is zero, the application can query certain metadata
+                // such as file, directory, or device attributes without accessing
+                // that file or device, even if GENERIC_READ access would have been denied.
+                using (SafeFileHandle handle = OpenReparsePoint(fileSysInfo.FullName, FileDesiredAccess.GenericZero))
                 {
                     string linkTarget = WinInternalGetTarget(handle);
 
@@ -7982,7 +8009,11 @@ namespace Microsoft.PowerShell.Commands
                 throw new PlatformNotSupportedException();
             }
 
-            using (SafeFileHandle handle = OpenReparsePoint(filePath, FileDesiredAccess.GenericRead))
+            // We set accessMode parameter to zero because documentation says:
+            // If this parameter is zero, the application can query certain metadata
+            // such as file, directory, or device attributes without accessing
+            // that file or device, even if GENERIC_READ access would have been denied.
+            using (SafeFileHandle handle = OpenReparsePoint(filePath, FileDesiredAccess.GenericZero))
             {
                 int outBufferSize = Marshal.SizeOf<REPARSE_DATA_BUFFER_SYMBOLICLINK>();
 
@@ -8069,13 +8100,15 @@ namespace Microsoft.PowerShell.Commands
                 return false;
             }
 #if !UNIX
+            // It is a reparse point and we should check some reparse point tags.
             var data = new WIN32_FIND_DATA();
             using (var handle = FindFirstFileEx(fileInfo.FullName, FINDEX_INFO_LEVELS.FindExInfoBasic, ref data, FINDEX_SEARCH_OPS.FindExSearchNameMatch, IntPtr.Zero, 0))
             {
-                // Name surrogates (0x20000000) are reparse points that point to other named entities local to the filesystem (like symlinks)
-                // In the case of OneDrive, they are not surrogates and would be safe to recurse into.
-                // This code is equivalent to the IsReparseTagNameSurrogate macro: https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/content/ntifs/nf-ntifs-isreparsetagnamesurrogate
-                if (!handle.IsInvalid && (data.dwReserved0 & 0x20000000) == 0 && (data.dwReserved0 & IO_REPARSE_TAG_APPEXECLINK) != IO_REPARSE_TAG_APPEXECLINK)
+                // The name surrogate bit 0x20000000 is defined in https://docs.microsoft.com/en-us/windows/win32/fileio/reparse-point-tags
+                // Name surrogates (0x20000000) are reparse points that point to other named entities local to the filesystem
+                // (like symlinks and mount points).
+                // In the case of OneDrive, they are not name surrogates and would be safe to recurse into.
+                if (!handle.IsInvalid && (data.dwReserved0 & 0x20000000) == 0 && (data.dwReserved0 != IO_REPARSE_TAG_APPEXECLINK))
                 {
                     return false;
                 }
@@ -8594,14 +8627,14 @@ namespace System.Management.Automation.Internal
                 IntPtr lpSecurityAttributes, FileMode dwCreationDisposition,
                 int dwFlagsAndAttributes, IntPtr hTemplateFile);
 
-            [DllImport(PinvokeDllNames.FindFirstStreamDllName, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
+            [DllImport("kernel32.dll", ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
             [SuppressMessage("Microsoft.Globalization", "CA2101:SpecifyMarshalingForPInvokeStringArguments", MessageId = "AlternateStreamNativeData.Name")]
             internal static extern SafeFindHandle FindFirstStreamW(
                 string lpFileName, StreamInfoLevels InfoLevel,
                 [In, Out, MarshalAs(UnmanagedType.LPStruct)]
                 AlternateStreamNativeData lpFindStreamData, uint dwFlags);
 
-            [DllImport(PinvokeDllNames.FindNextStreamDllName, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
+            [DllImport("kernel32.dll", ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             [SuppressMessage("Microsoft.Globalization", "CA2101:SpecifyMarshalingForPInvokeStringArguments", MessageId = "AlternateStreamNativeData.Name")]
             internal static extern bool FindNextStreamW(

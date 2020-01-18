@@ -446,6 +446,41 @@ namespace System.Management.Automation
 
             return null;
         }
+
+        private static string s_windowsPowerShellVersion = null;
+
+        /// <summary>
+        /// Get the Windows PowerShell version from registry.
+        /// </summary>
+        /// <returns>
+        /// String of Windows PowerShell version from registry.
+        /// </returns>
+        internal static string GetWindowsPowerShellVersionFromRegistry()
+        {
+            if (!string.IsNullOrEmpty(InternalTestHooks.TestWindowsPowerShellVersionString))
+            {
+                return InternalTestHooks.TestWindowsPowerShellVersionString;
+            }
+
+            if (s_windowsPowerShellVersion != null)
+            {
+                return s_windowsPowerShellVersion;
+            }
+
+            string engineKeyPath = RegistryStrings.MonadRootKeyPath + "\\" +
+                PSVersionInfo.RegistryVersionKey + "\\" + RegistryStrings.MonadEngineKey;
+
+            using (RegistryKey engineKey = Registry.LocalMachine.OpenSubKey(engineKeyPath))
+            {
+                if (engineKey != null)
+                {
+                    s_windowsPowerShellVersion = engineKey.GetValue(RegistryStrings.MonadEngine_MonadVersion) as string;
+                    return s_windowsPowerShellVersion;
+                }
+            }
+
+            return string.Empty;
+        }
 #endif
 
         internal static string DefaultPowerShellAppBase => GetApplicationBase(DefaultPowerShellShellID);
@@ -457,20 +492,6 @@ namespace System.Management.Automation
         }
 
         private static string[] s_productFolderDirectories;
-
-        /// <summary>
-        /// Specifies the per-user configuration settings directory in a platform agnostic manner.
-        /// </summary>
-        /// <returns>The current user's configuration settings directory.</returns>
-        internal static string GetUserConfigurationDirectory()
-        {
-#if UNIX
-            return Platform.SelectProductNameForDirectory(Platform.XDG_Type.CONFIG);
-#else
-            string basePath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
-            return IO.Path.Combine(basePath, Utils.ProductNameForDirectory);
-#endif
-        }
 
         private static string[] GetProductFolderDirectories()
         {
@@ -809,11 +830,11 @@ namespace System.Management.Automation
 
         private static readonly Dictionary<string, string> WindowsPowershellGroupPolicyKeys = new Dictionary<string, string>
         {
-            {nameof(ScriptExecution), @"Software\Policies\Microsoft\Windows\PowerShell"},
-            {nameof(ScriptBlockLogging), @"Software\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging"},
-            {nameof(ModuleLogging), @"Software\Policies\Microsoft\Windows\PowerShell\ModuleLogging"},
-            {nameof(Transcription), @"Software\Policies\Microsoft\Windows\PowerShell\Transcription"},
-            {nameof(UpdatableHelp), @"Software\Policies\Microsoft\Windows\PowerShell\UpdatableHelp"},
+            { nameof(ScriptExecution), @"Software\Policies\Microsoft\Windows\PowerShell" },
+            { nameof(ScriptBlockLogging), @"Software\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging" },
+            { nameof(ModuleLogging), @"Software\Policies\Microsoft\Windows\PowerShell\ModuleLogging" },
+            { nameof(Transcription), @"Software\Policies\Microsoft\Windows\PowerShell\Transcription" },
+            { nameof(UpdatableHelp), @"Software\Policies\Microsoft\Windows\PowerShell\UpdatableHelp" },
         };
 
         private const string PolicySettingFallbackKey = "UseWindowsPowerShellPolicySetting";
@@ -858,7 +879,10 @@ namespace System.Management.Automation
                     {
                         using (RegistryKey subKey = gpoKey.OpenSubKey(settingName))
                         {
-                            if (subKey != null) { rawRegistryValue = subKey.GetValueNames(); }
+                            if (subKey != null)
+                            {
+                                rawRegistryValue = subKey.GetValueNames();
+                            }
                         }
                     }
 
@@ -874,8 +898,14 @@ namespace System.Management.Automation
                             case var _ when propertyType == typeof(bool?):
                                 if (rawRegistryValue is int rawIntValue)
                                 {
-                                    if (rawIntValue == 1) { propertyValue = true; }
-                                    else if (rawIntValue == 0) { propertyValue = false; }
+                                    if (rawIntValue == 1)
+                                    {
+                                        propertyValue = true;
+                                    }
+                                    else if (rawIntValue == 0)
+                                    {
+                                        propertyValue = false;
+                                    }
                                 }
 
                                 break;
@@ -1251,8 +1281,19 @@ namespace System.Management.Automation
 #if UNIX
             return false;
 #else
+            if (string.IsNullOrEmpty(path) || !path.StartsWith('\\'))
+            {
+                return false;
+            }
+
+            // handle special cases like \\wsl$\ubuntu which isn't a UNC path, but we can say it is so the filesystemprovider can use it
+            if (path.StartsWith(@"\\wsl$", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
             Uri uri;
-            return !string.IsNullOrEmpty(path) && Uri.TryCreate(path, UriKind.Absolute, out uri) && uri.IsUnc;
+            return Uri.TryCreate(path, UriKind.Absolute, out uri) && uri.IsUnc;
 #endif
         }
 
@@ -2029,6 +2070,9 @@ namespace System.Management.Automation.Internal
         // A location to test PSEdition compatibility functionality for Windows PowerShell modules with
         // since we can't manipulate the System32 directory in a test
         internal static string TestWindowsPowerShellPSHomeLocation;
+
+        // A version of Windows PS that is installed on the system; normally this is retrieved from a reg key that is write-protected.
+        internal static string TestWindowsPowerShellVersionString;
 
         internal static bool ShowMarkdownOutputBypass;
 

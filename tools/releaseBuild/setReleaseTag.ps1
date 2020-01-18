@@ -19,7 +19,7 @@ function New-BuildInfoJson {
         [switch] $IsDaily
     )
 
-    $blobName = $ReleaseTag  -replace '\.', '-'
+    $blobName = $ReleaseTag -replace '\.', '-'
 
     $isPreview = $ReleaseTag -like '*-*'
 
@@ -33,8 +33,13 @@ function New-BuildInfoJson {
         $filename = 'daily.json'
     }
 
+    ## Get the UTC time and round up to the second.
+    $dateTime = [datetime]::UtcNow
+    $dateTime = [datetime]::new($dateTime.Ticks - ($dateTime.Ticks % [timespan]::TicksPerSecond), $dateTime.Kind)
+
     @{
         ReleaseTag = $ReleaseTag
+        ReleaseDate = $dateTime
         BlobName = $blobName
     } | ConvertTo-Json | Out-File -Encoding ascii -Force -FilePath $filename
 
@@ -70,7 +75,7 @@ if($ReleaseTag -eq 'fromBranch' -or !$ReleaseTag)
             New-BuildInfoJson -ReleaseTag $releaseTag
         }
     }
-    if($branchOnly -eq 'master' -or $branchOnly -like '*dailytest*')
+    elseif($branchOnly -eq 'master' -or $branchOnly -like '*dailytest*')
     {
         $isDaily = $true
         Write-verbose "daily build" -verbose
